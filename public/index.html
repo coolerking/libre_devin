@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<!--
+	書籍管理システム
+	一覧画面（動的版）
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="css/booklist.css">
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<title>書籍管理システム</title>
+</head>
+
+<body>
+
+<div id="header">
+	<h1>書籍管理システム</h1>
+</div>
+
+<div id="app">
+
+<fieldset id="list">
+<legend>一覧</legend>
+<div id="total_count">
+<p>該当件数　{{ totalCount }}件</p>
+</div>
+
+<span class="page" v-for="p in totalPages" :key="'top-' + p">
+<a v-if="p !== currentPage" href="#" @click.prevent="goToPage(p)">{{ String(p).padStart(2, '0') }}</a>
+<a v-else class="no-link">{{ String(p).padStart(2, '0') }}</a>
+</span>
+
+<table border="1" style="clear:both;">
+
+<thead>
+<tr>
+<th>No</th>
+<th>タイトル</th>
+<th>サブタイトル</th>
+<th>著者</th>
+<th>出版</th>
+<th>登録日</th>
+<th>要望部署</th>
+<th>要望者</th>
+<th>購入方法</th>
+<th>価格</th>
+</tr>
+</thead>
+
+<tbody>
+<tr v-for="book in books" :key="book.no">
+<td>{{ book.no }}</td>
+<td><a :href="'detail.html?id=' + book.id + '&branch=' + book.branch" target="_blank">{{ book.title }}</a></td>
+<td>{{ book.subtitle }}</td>
+<td>{{ book.writer }}</td>
+<td>{{ book.print }}</td>
+<td>{{ book.recorddate }}</td>
+<td>{{ book.post }}</td>
+<td>{{ book.name }}</td>
+<td>{{ book.buy }}</td>
+<td>{{ formatPrice(book.price) }}</td>
+</tr>
+</tbody>
+
+</table>
+
+<span class="page" v-for="p in totalPages" :key="'bottom-' + p">
+<a v-if="p !== currentPage" href="#" @click.prevent="goToPage(p)">{{ String(p).padStart(2, '0') }}</a>
+<a v-else class="no-link">{{ String(p).padStart(2, '0') }}</a>
+</span>
+
+</fieldset>
+
+</div>
+
+<p id="gotop"><a href="#header">トップへ</a></p>
+
+<script>
+const { createApp, ref, onMounted } = Vue;
+
+createApp({
+  setup() {
+    const books = ref([]);
+    const totalCount = ref(0);
+    const totalPages = ref(0);
+    const currentPage = ref(1);
+
+    async function fetchBooks(page) {
+      try {
+        const response = await fetch(`/api/books?page=${page}`);
+        const data = await response.json();
+        books.value = data.books;
+        totalCount.value = data.totalCount;
+        totalPages.value = data.totalPages;
+        currentPage.value = data.currentPage;
+      } catch (error) {
+        console.error('データ取得エラー:', error);
+      }
+    }
+
+    function goToPage(page) {
+      fetchBooks(page);
+      window.scrollTo(0, 0);
+    }
+
+    function formatPrice(price) {
+      if (!price) return '';
+      return '\\' + price;
+    }
+
+    onMounted(() => {
+      fetchBooks(1);
+    });
+
+    return {
+      books,
+      totalCount,
+      totalPages,
+      currentPage,
+      goToPage,
+      formatPrice,
+    };
+  }
+}).mount('#app');
+</script>
+
+</body>
+</html>

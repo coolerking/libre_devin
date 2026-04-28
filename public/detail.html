@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<!--
+	書籍管理システム
+	詳細画面（動的版）
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="css/booklist.css">
+<link rel="stylesheet" type="text/css" href="css/bookdetail.css">
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<title>書籍管理システム</title>
+</head>
+
+<body>
+
+<div id="header">
+	<h1>書籍管理システム</h1>
+</div>
+
+<div id="app">
+
+<div v-if="loading" style="padding: 20px;">読み込み中...</div>
+<div v-else-if="error" style="padding: 20px; color: red;">{{ error }}</div>
+
+<template v-else>
+<fieldset id="detail">
+<legend>{{ book.no }}</legend>
+<p>
+<span class="cap">タイトル</span>
+<span class="detailtext">{{ book.title }}</span>
+</p>
+
+<p>
+<span class="cap">サブタイトル</span>
+<span class="detailtext">{{ book.subtitle }}</span>
+</p>
+
+<p>
+<span class="cap">著者</span>
+<span class="detailtext">{{ book.writer }}</span>
+</p>
+
+<p>
+<span class="cap">出版</span>
+<span class="detailtext">{{ book.print }}</span>
+</p>
+
+<p>
+<span class="cap">登録日</span>
+<span class="detailtext">{{ book.recorddate }}</span>
+</p>
+
+<p>
+<span class="cap">要望部署</span>
+<span class="detailtext">{{ book.post }}</span>
+</p>
+
+<p>
+<span class="cap">要望者</span>
+<span class="detailtext">{{ book.name }}</span>
+</p>
+
+<p>
+<span class="cap">購入方法</span>
+<span class="detailtext">{{ book.buy }}</span>
+</p>
+
+<p>
+<span class="cap">価格</span>
+<span class="detailtext">{{ formatPrice(book.price) }}</span>
+</p>
+
+</fieldset>
+
+<p>
+<span class="detailtext">
+<img v-if="book.thumbnail" :src="book.thumbnail" width="200" @error="onImageError">
+<img v-else src="image/20200501_noimage.png" width="200">
+</span>
+</p>
+</template>
+
+</div>
+
+<script>
+const { createApp, ref, onMounted } = Vue;
+
+createApp({
+  setup() {
+    const book = ref({});
+    const loading = ref(true);
+    const error = ref(null);
+
+    function formatPrice(price) {
+      if (!price) return '';
+      return '\\' + price;
+    }
+
+    function onImageError(event) {
+      event.target.src = 'image/20200501_noimage.png';
+    }
+
+    onMounted(async () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      const branch = params.get('branch');
+
+      if (!id || branch === null) {
+        error.value = 'パラメータが不正です';
+        loading.value = false;
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/book/${id}/${branch}`);
+        if (!response.ok) {
+          throw new Error('書籍が見つかりません');
+        }
+        const data = await response.json();
+        book.value = data;
+      } catch (err) {
+        error.value = err.message;
+      } finally {
+        loading.value = false;
+      }
+    });
+
+    return {
+      book,
+      loading,
+      error,
+      formatPrice,
+      onImageError,
+    };
+  }
+}).mount('#app');
+</script>
+
+</body>
+</html>
